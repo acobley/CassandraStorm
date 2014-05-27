@@ -75,8 +75,8 @@ PRIMARY KEY (minute,interaction_time)
         @Override
         public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
         	 
-        	//cluster = Cluster.builder().addContactPoint("192.168.2.10").build(); //vagrant cassandra cluster
-        	cluster = Cluster.builder().addContactPoint("127.0.0.1").build(); //vagrant cassandra cluster
+        	cluster = Cluster.builder().addContactPoint("192.168.2.10").build(); //vagrant cassandra cluster
+        	//cluster = Cluster.builder().addContactPoint("127.0.0.1").build(); //vagrant cassandra cluster
        	     
 
         	 session = cluster.connect();
