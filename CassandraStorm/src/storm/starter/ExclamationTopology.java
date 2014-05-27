@@ -127,6 +127,7 @@ PRIMARY KEY (minute,interaction_time)
      builder.setBolt("Saver2", new SaverBolt(), 4).shuffleGrouping("exclaim3");
      builder.setBolt("Saver3", new SaverBolt(), 4).shuffleGrouping("exclaim2").shuffleGrouping("exclaim1");
     Config conf = new Config();
+    
     conf.setDebug(true);
 
     if (args != null && args.length > 0) {
