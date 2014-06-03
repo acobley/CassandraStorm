@@ -95,7 +95,7 @@ PRIMARY KEY (minute,interaction_time)
         	  d="no time";
           String CQL="insert into Keyspace2.StormSync (minute,processtime,interaction_time,Value,saverid)"
           		+ "Values ('"+dDate.toString()+"','"+d+"',"+uuid+",'"+Value+"','"+ComponentId+"')";
-          //System.out.println("CQL  "+CQL);
+         // System.out.println("CQL  "+CQL);
           session.execute(CQL);
           //cluster.shutdown();
         
@@ -128,18 +128,20 @@ PRIMARY KEY (minute,interaction_time)
      builder.setBolt("Saver3", new SaverBolt(), 4).shuffleGrouping("exclaim2").shuffleGrouping("exclaim1");
     Config conf = new Config();
     
-    conf.setDebug(true);
+    conf.setDebug(false);
+    
 
     if (args != null && args.length > 0) {
+      System.out.println("Running on full cluster");	
       conf.setNumWorkers(3);
 
       StormSubmitter.submitTopology(args[0], conf, builder.createTopology());
     }
     else {
-
+      System.out.println("Running on a local cluster");
       LocalCluster cluster = new LocalCluster();
       cluster.submitTopology("test", conf, builder.createTopology());
-      Utils.sleep(10000);
+      Utils.sleep(50000);
       cluster.killTopology("test");
       cluster.shutdown();
       
