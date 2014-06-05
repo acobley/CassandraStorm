@@ -15,6 +15,7 @@ import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 import storm.starter.spout.*;
 
+import java.net.InetAddress;
 import java.util.Date;
 import java.util.Map;
 
@@ -38,9 +39,12 @@ public class ExclamationTopology {
     @Override
     public void execute(Tuple tuple) {
     Date d=new Date();
-      
-      _collector.emit(tuple, new Values(tuple.getString(0) + "!! "+ComponentId,d.toString()));
+      try{
+      _collector.emit(tuple, new Values(tuple.getString(0) + "!! "+InetAddress.getLocalHost()+" !" +ComponentId,d.toString()));
       _collector.ack(tuple);
+      }catch(Exception et){
+    	  System.out.println("Can't git ip address");
+      }
     }
   
     @Override
@@ -93,10 +97,15 @@ PRIMARY KEY (minute,interaction_time)
           String d=tuple.getString(1);
           if (d==null)
         	  d="no time";
+          try{
           String CQL="insert into Keyspace2.StormSync (minute,processtime,interaction_time,Value,saverid)"
-          		+ "Values ('"+dDate.toString()+"','"+d+"',"+uuid+",'"+Value+"','"+ComponentId+"')";
-         // System.out.println("CQL  "+CQL);
-          session.execute(CQL);
+          		+ "Values ('"+dDate.toString()+"','"+d+"',"+uuid+",'"+Value+" "+InetAddress.getLocalHost()+"','"+ComponentId+"')";
+             session.execute(CQL);
+          }catch (Exception et){
+        	  System.out.println("IP address error");
+          }
+          // System.out.println("CQL  "+CQL);
+          
           //cluster.shutdown();
         
           _collector.ack(tuple);
