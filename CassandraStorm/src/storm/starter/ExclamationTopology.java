@@ -98,8 +98,8 @@ PRIMARY KEY (minute,interaction_time)
           if (d==null)
         	  d="no time";
           try{
-          String CQL="insert into Keyspace2.StormSync (minute,processtime,interaction_time,Value,saverid)"
-          		+ "Values ('"+dDate.toString()+"','"+d+"',"+uuid+",'"+Value+" "+InetAddress.getLocalHost()+"','"+ComponentId+"')";
+          String CQL="insert into Keyspace2.StormSync (minute,processtime,interaction_time,Value,host,saverid)"
+          		+ "Values ('"+dDate.toString()+"','"+d+"',"+uuid+",'"+Value+"','"+InetAddress.getLocalHost()+"','"+ComponentId+"')";
              session.execute(CQL);
           }catch (Exception et){
         	  System.out.println("IP address error");
