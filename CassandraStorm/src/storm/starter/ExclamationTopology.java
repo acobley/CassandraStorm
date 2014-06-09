@@ -62,6 +62,7 @@ public class ExclamationTopology {
        
         Cluster cluster;
         Session session;
+        String IP="";
 /*    keyspace for the stormsync    
 CREATE KEYSPACE keyspace2 WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 1};
 use keyspace2;
@@ -72,6 +73,7 @@ processtime varchar,
 interaction_time timeuuid,
 Value varchar,
 SaverId varChar,
+host varchar,
 PRIMARY KEY (minute,interaction_time)
 ) with CLUSTERING ORDER BY (interaction_time DESC);
         */
@@ -81,8 +83,11 @@ PRIMARY KEY (minute,interaction_time)
         	 
         	cluster = Cluster.builder().addContactPoint("192.168.2.10").build(); //vagrant cassandra cluster
         	//cluster = Cluster.builder().addContactPoint("127.0.0.1").build(); //vagrant cassandra cluster
-       	     
-
+       	    try{
+        	  IP=InetAddress.getLocalHost().toString();
+       	    }catch (Exception et){
+       	       System.out.println("IP address error");
+            }
         	 session = cluster.connect();
         	_collector = collector;
         	ComponentId=context.getThisComponentId();
@@ -99,14 +104,12 @@ PRIMARY KEY (minute,interaction_time)
         	  d="no time";
           try{
           String CQL="insert into Keyspace2.StormSync (minute,processtime,interaction_time,Value,host,saverid)"
-          		+ "Values ('"+dDate.toString()+"','"+d+"',"+uuid+",'"+Value+"','"+InetAddress.getLocalHost()+"','"+ComponentId+"')";
+          		+ "Values ('"+dDate.toString()+"','"+d+"',"+uuid+",'"+Value+"','"+IP+"','"+ComponentId+"')";
              session.execute(CQL);
           }catch (Exception et){
-        	  System.out.println("IP address error");
+        	  System.out.println("CQL execution error"+et);
           }
-          // System.out.println("CQL  "+CQL);
-          
-          //cluster.shutdown();
+         
         
           _collector.ack(tuple);
         }
@@ -137,12 +140,12 @@ PRIMARY KEY (minute,interaction_time)
      builder.setBolt("Saver3", new SaverBolt(), 4).shuffleGrouping("exclaim2").shuffleGrouping("exclaim1");
     Config conf = new Config();
     
-    conf.setDebug(false);
+    conf.setDebug(true);
     
 
     if (args != null && args.length > 0) {
       System.out.println("Running on full cluster");	
-      conf.setNumWorkers(3);
+      conf.setNumWorkers(4);
 
       StormSubmitter.submitTopology(args[0], conf, builder.createTopology());
     }
