@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Random;
 
-public class mySpout extends BaseRichSpout {
+public class RandomLetter extends BaseRichSpout {
 	  SpoutOutputCollector _collector;
 	  Random _rand;
 

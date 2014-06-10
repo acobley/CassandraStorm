@@ -130,7 +130,7 @@ PRIMARY KEY (minute,interaction_time)
   public static void main(String[] args) throws Exception {
     TopologyBuilder builder = new TopologyBuilder();
     
-    builder.setSpout("word", new mySpout(), 10);
+    builder.setSpout("word", new RandomLetter(), 10);
     builder.setSpout("sentence", new RandomSentenceSpout(), 10);
     builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("sentence");
      builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("word");
