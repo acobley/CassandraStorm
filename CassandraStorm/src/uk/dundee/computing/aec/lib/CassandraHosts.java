@@ -1,6 +1,7 @@
 package uk.dundee.computing.aec.lib;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.AuthenticationException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 
 import java.util.Iterator;
@@ -60,27 +61,22 @@ public final class CassandraHosts  {
 	public static Cluster getCluster(){
 		System.out.println("getCluster");
 		try {
-			cluster = Cluster.builder().addContactPoint("192.168.2.10").build(); // vagrant
-																					// cassandra
-																					// cluster
+			cluster = Cluster.builder().addContactPoints("192.168.2.10").build(); // vagrant
+			cluster.init();	//Force an initial connection  which will throw a no host available exception if vagrant isn't there																	// cassandra
+																					
 
-		} catch (Exception et) {
+		} catch (NoHostAvailableException | AuthenticationException | IllegalStateException et) {
 			System.out.println("No Vagrant host " + et);
 			try {
 				cluster = Cluster.builder().addContactPoint("127.0.0.1").build(); // localhost
-
-			} catch (NoHostAvailableException et1) {
+				cluster.init();
+			} catch (NoHostAvailableException | AuthenticationException | IllegalStateException et1) {
 				// can't get to a cassandra cluster bug out
 				return null;
 
 			}
 		}
-		getHosts(cluster);
-        if (cluster ==null){
-        	System.out.println("no cassandra cluster");
-        	return null;
-        	
-        }
+
 		Keyspaces.SetUpKeySpaces(cluster);
 
 		return cluster;

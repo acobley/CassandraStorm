@@ -16,6 +16,7 @@ import backtype.storm.utils.Utils;
 import storm.starter.spout.*;
 import uk.dundee.computing.aec.lib.CassandraHosts;
 
+import java.net.InetAddress;
 import java.util.Date;
 import java.util.Map;
 
@@ -57,7 +58,7 @@ public class ExclamationTopology {
                 return java.util.UUID.fromString(new com.eaio.uuid.UUID().toString());
         }
        
-        Cluster cluster;
+        Cluster cassandracluster;
         Session session;
         String IP="";
 
@@ -66,8 +67,13 @@ public class ExclamationTopology {
         public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
         	 
 
-         	cluster = CassandraHosts.getCluster();
-        	 session = cluster.connect();
+        	cassandracluster = CassandraHosts.getCluster();
+			try{
+				IP=InetAddress.getLocalHost().toString();
+				}catch (Exception et){
+				System.out.println("IP address error");
+				}
+        	 session = cassandracluster.connect();
         	_collector = collector;
         	ComponentId=context.getThisComponentId();
         }
@@ -82,11 +88,13 @@ public class ExclamationTopology {
           if (d==null)
         	  d="no time";
           try{
-          String CQL="insert into Keyspace2.StormSync (minute,processtime,interaction_time,Value,host,saverid)"
+          String CQL="insert into stormspace.stormsync (minute,processtime,interaction_time,Value,host,saverid)"
           		+ "Values ('"+dDate.toString()+"','"+d+"',"+uuid+",'"+Value+"','"+IP+"','"+ComponentId+"')";
              session.execute(CQL);
           }catch (Exception et){
-        	  System.out.println("CQL execution error"+et);
+        	  System.out.println("CQL execution error "+et);
+        	  System.out.println(et.getStackTrace());
+        	  et.printStackTrace();
           }
          
         
@@ -96,7 +104,7 @@ public class ExclamationTopology {
         public void cleanup(){
         	
         	//cluster.shutdown();
-        	cluster.close();
+        	cassandracluster.close();
         }
         @Override
         public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -132,10 +140,10 @@ public class ExclamationTopology {
       System.out.println("Running on a local cluster");
       LocalCluster cluster = new LocalCluster();
       cluster.submitTopology("test", conf, builder.createTopology());
-      Utils.sleep(50000);
+      Utils.sleep(10000);
       cluster.killTopology("test");
       cluster.shutdown();
-      
+       
   }
   }
   
