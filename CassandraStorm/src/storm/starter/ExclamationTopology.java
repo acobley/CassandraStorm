@@ -14,8 +14,8 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 import storm.starter.spout.*;
+import uk.dundee.computing.aec.lib.CassandraHosts;
 
-import java.net.InetAddress;
 import java.util.Date;
 import java.util.Map;
 
@@ -39,12 +39,9 @@ public class ExclamationTopology {
     @Override
     public void execute(Tuple tuple) {
     Date d=new Date();
-      try{
-      _collector.emit(tuple, new Values(tuple.getString(0) + "!! "+InetAddress.getLocalHost()+" !" +ComponentId,d.toString()));
+      
+      _collector.emit(tuple, new Values(tuple.getString(0) + "!! "+ComponentId,d.toString()));
       _collector.ack(tuple);
-      }catch(Exception et){
-    	  System.out.println("Can't git ip address");
-      }
     }
   
     @Override
@@ -63,31 +60,13 @@ public class ExclamationTopology {
         Cluster cluster;
         Session session;
         String IP="";
-/*    keyspace for the stormsync    
-CREATE KEYSPACE keyspace2 WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 1};
-use keyspace2;
 
-CREATE TABLE StormSync (
-minute varchar,
-processtime varchar,
-interaction_time timeuuid,
-Value varchar,
-SaverId varChar,
-host varchar,
-PRIMARY KEY (minute,interaction_time)
-) with CLUSTERING ORDER BY (interaction_time DESC);
-        */
         
         @Override
         public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
         	 
-        	cluster = Cluster.builder().addContactPoint("192.168.2.10").build(); //vagrant cassandra cluster
-        	//cluster = Cluster.builder().addContactPoint("127.0.0.1").build(); //vagrant cassandra cluster
-       	    try{
-        	  IP=InetAddress.getLocalHost().toString();
-       	    }catch (Exception et){
-       	       System.out.println("IP address error");
-            }
+
+         	cluster = CassandraHosts.getCluster();
         	 session = cluster.connect();
         	_collector = collector;
         	ComponentId=context.getThisComponentId();
