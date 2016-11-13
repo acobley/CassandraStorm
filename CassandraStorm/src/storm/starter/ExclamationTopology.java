@@ -28,131 +28,133 @@ import com.datastax.driver.core.Session;
  */
 public class ExclamationTopology {
 
-  public static class ExclamationBolt extends BaseRichBolt {
-    OutputCollector _collector;
-    String ComponentId;
-    @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
-      _collector = collector;
-      ComponentId=context.getThisComponentId();
-    }
+    public static class ExclamationBolt extends BaseRichBolt {
 
-    @Override
-    public void execute(Tuple tuple) {
-    Date d=new Date();
-      
-      _collector.emit(tuple, new Values(tuple.getString(0) + "!! "+ComponentId,d.toString()));
-      _collector.ack(tuple);
-    }
-  
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields("word","date"));
-    }
-  }
-    public static class SaverBolt extends BaseRichBolt {
         OutputCollector _collector;
         String ComponentId;
-        public static java.util.UUID getTimeUUID()
-        {
-                return java.util.UUID.fromString(new com.eaio.uuid.UUID().toString());
-        }
-       
-        Cluster cassandracluster;
-        Session session;
-        String IP="";
 
-        
         @Override
         public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
-        	 
-
-        	cassandracluster = CassandraHosts.getCluster();
-			try{
-				IP=InetAddress.getLocalHost().toString();
-				}catch (Exception et){
-				System.out.println("IP address error");
-				}
-        	 session = cassandracluster.connect();
-        	_collector = collector;
-        	ComponentId=context.getThisComponentId();
+            _collector = collector;
+            ComponentId = context.getThisComponentId();
         }
 
         @Override
         public void execute(Tuple tuple) {
-       
-          Date dDate=new Date();
-          java.util.UUID uuid= getTimeUUID();
-          String Value =tuple.getString(0) ;
-          String d=tuple.getString(1);
-          if (d==null)
-        	  d="no time";
-          try{
-          String CQL="insert into stormspace.stormsync (minute,processtime,interaction_time,Value,host,saverid)"
-          		+ "Values ('"+dDate.toString()+"','"+d+"',"+uuid+",'"+Value+"','"+IP+"','"+ComponentId+"')";
-             session.execute(CQL);
-          }catch (Exception et){
-        	  System.out.println("CQL execution error "+et);
-        	  System.out.println(et.getStackTrace());
-        	  et.printStackTrace();
-          }
-         
-        
-          _collector.ack(tuple);
+            Date d = new Date();
+
+            _collector.emit(tuple, new Values(tuple.getString(0) + "!! " + ComponentId, d.toString()));
+            _collector.ack(tuple);
         }
-        @Override
-        public void cleanup(){
-        	
-        	//cluster.shutdown();
-        	cassandracluster.close();
-        }
+
         @Override
         public void declareOutputFields(OutputFieldsDeclarer declarer) {
-          declarer.declare(new Fields("word"));
+            declarer.declare(new Fields("word", "date"));
         }
-    
-
-  }
-
-  public static void main(String[] args) throws Exception {
-    TopologyBuilder builder = new TopologyBuilder();
-    
-    builder.setSpout("word", new RandomLetter(), 10);
-    builder.setSpout("sentence", new RandomSentenceSpout(), 10);
-    builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("sentence");
-     builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("word");
-     builder.setBolt("exclaim3", new ExclamationBolt(), 2).shuffleGrouping("exclaim2");
-     builder.setBolt("Saver", new SaverBolt(), 4).shuffleGrouping("exclaim1");
-     builder.setBolt("Saver2", new SaverBolt(), 4).shuffleGrouping("exclaim3");
-     builder.setBolt("Saver3", new SaverBolt(), 4).shuffleGrouping("exclaim2").shuffleGrouping("exclaim1");
-    Config conf = new Config();
-    
-    conf.setDebug(true);
-    
-
-    if (args != null && args.length > 0) {
-      System.out.println("Running on full cluster");	
-      conf.setNumWorkers(4);
-
-      StormSubmitter.submitTopology(args[0], conf, builder.createTopology());
     }
-    else {
-      System.out.println("Running on a local cluster");
-      LocalCluster cluster = new LocalCluster();
-      cluster.submitTopology("test", conf, builder.createTopology());
-      Utils.sleep(10000);
-      cluster.killTopology("test");
-      cluster.shutdown();
-       
-  }
-  }
-  
-  
+
+    public static class SaverBolt extends BaseRichBolt {
+
+        OutputCollector _collector;
+        String ComponentId;
+
+        public static java.util.UUID getTimeUUID() {
+            return java.util.UUID.fromString(new com.eaio.uuid.UUID().toString());
+        }
+
+        Cluster cassandracluster;
+        Session session;
+        String IP = "";
+
+        @Override
+        public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
+
+            cassandracluster = CassandraHosts.getCluster();
+            try {
+                IP = InetAddress.getLocalHost().toString();
+            } catch (Exception et) {
+                System.out.println("IP address error");
+            }
+            session = cassandracluster.connect();
+            _collector = collector;
+            ComponentId = context.getThisComponentId();
+        }
+
+        @Override
+        public void execute(Tuple tuple) {
+
+            Date dDate = new Date();
+            java.util.UUID uuid = getTimeUUID();
+            String Value = tuple.getString(0);
+            String d = tuple.getString(1);
+            if (d == null) {
+                d = "no time";
+            }
+            try {
+                String CQL = "insert into stormspace.stormsync (minute,processtime,interaction_time,Value,host,saverid)"
+                        + "Values ('" + dDate.toString() + "','" + d + "'," + uuid + ",'" + Value + "','" + IP + "','" + ComponentId + "')";
+                session.execute(CQL);
+            } catch (Exception et) {
+                System.out.println("CQL execution error " + et+":"+CassandraHosts.getHost()+"  - "+ComponentId);
+                //System.out.println(et.getStackTrace());
+                //et.printStackTrace();
+            }
+
+            _collector.ack(tuple);
+        }
+
+        @Override
+        public void cleanup() {
+
+            //cluster.shutdown();
+            
+            cassandracluster.close();
+            System.out.println(ComponentId + "Session closed");
+        }
+
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer declarer) {
+            declarer.declare(new Fields("word"));
+        }
+
+    }
+
+    public static void main(String[] args) throws Exception {
+        TopologyBuilder builder = new TopologyBuilder();
+
+        builder.setSpout("word", new RandomLetter(), 10);
+        builder.setSpout("sentence", new RandomSentenceSpout(), 10);
+        builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("sentence");
+        builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("word");
+        builder.setBolt("exclaim3", new ExclamationBolt(), 2).shuffleGrouping("exclaim2");
+        builder.setBolt("Saver", new SaverBolt(), 4).shuffleGrouping("exclaim1");
+        builder.setBolt("Saver2", new SaverBolt(), 4).shuffleGrouping("exclaim3");
+        builder.setBolt("Saver3", new SaverBolt(), 4).shuffleGrouping("exclaim2").shuffleGrouping("exclaim1");
+        Config conf = new Config();
+
+        conf.setDebug(true);
+
+        if (args != null && args.length > 0) {
+            System.out.println("Running on full cluster");
+            conf.setNumWorkers(4);
+
+            StormSubmitter.submitTopology(args[0], conf, builder.createTopology());
+        } else {
+            System.out.println("Running on a local cluster");
+            LocalCluster cluster = new LocalCluster();
+            cluster.submitTopology("test", conf, builder.createTopology());
+            Utils.sleep(10000);
+            cluster.killTopology("test");
+            cluster.shutdown();
+
+        }
+    }
+
   //builder.setSpout("word", new TestWordSpout(), 10);
-  //builder.setSpout("sentence", new RandomSentenceSpout(), 10);
-  //builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("sentence");
-  // builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("word");
-  // builder.setBolt("exclaim3", new ExclamationBolt(), 2).shuffleGrouping("exclaim2");
-  // builder.setBolt("Saver", new SaverBolt(), 4).shuffleGrouping("exclaim1");
-  // builder.setBolt("Saver2", new SaverBolt(), 4).shuffleGrouping("exclaim3");
+    //builder.setSpout("sentence", new RandomSentenceSpout(), 10);
+    //builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("sentence");
+    // builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("word");
+    // builder.setBolt("exclaim3", new ExclamationBolt(), 2).shuffleGrouping("exclaim2");
+    // builder.setBolt("Saver", new SaverBolt(), 4).shuffleGrouping("exclaim1");
+    // builder.setBolt("Saver2", new SaverBolt(), 4).shuffleGrouping("exclaim3");
 }

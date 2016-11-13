@@ -23,9 +23,9 @@ import java.util.List;
 
 public final class CassandraHosts  {
 	private static Cluster cluster;
-	static String Host = "192.168.2.10"; // at least one starting point to talk
+	//static String Host = "192.168.2.10"; // at least one starting point to talk
 											// to
-
+static String Host = "127.0.0.1"; // at least one starting point to talk
 	public CassandraHosts() {
 
 	}
@@ -63,15 +63,17 @@ public final class CassandraHosts  {
 		try {
 			cluster = Cluster.builder().addContactPoints("192.168.2.10").build(); // vagrant
 			cluster.init();	//Force an initial connection  which will throw a no host available exception if vagrant isn't there																	// cassandra
-																					
+                        Host="192.168.2.10";
 
 		} catch (NoHostAvailableException | AuthenticationException | IllegalStateException et) {
 			System.out.println("No Vagrant host " + et);
 			try {
 				cluster = Cluster.builder().addContactPoint("127.0.0.1").build(); // localhost
 				cluster.init();
+                                Host="127.0.0.1";
 			} catch (NoHostAvailableException | AuthenticationException | IllegalStateException et1) {
 				// can't get to a cassandra cluster bug out
+                                Host="0.0.0.0";
 				return null;
 
 			}
